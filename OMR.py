@@ -1,12 +1,21 @@
 import numpy as np
 import cv2
 import math
+import sys
+import os
+
+# Taking the path of the answer sheet
+imagePath = input(
+    "Please input the RELATIVE path of the image you want to analyze without quotes\n")
+fullImagePath = os.getcwd().replace('\\', '/') + '/' + imagePath
+print(fullImagePath)
+
 
 # Returns the read image with correct orientation in greyscale
 def retrieveImageWithOrientation():
 
-    img = cv2.imread(
-        'D:/learning/cv/Project/Optical-Mark-Recognition-OMR-/CSE365_test_cases_project_1/test_sample1.jpg', 0)
+    img = cv2.imread(fullImagePath, 0)
+    # 'D:/learning/cv/Optical-Mark-Recognition-OMR-/CSE365_test_cases_project_1/test_sample1.jpg'
 
     # Obtain edges
     img_edges = cv2.Canny(img, 100, 100, apertureSize=3)
@@ -18,14 +27,15 @@ def retrieveImageWithOrientation():
     # Through testing of a single line, we can determine the angle of rotation of the image
     x1, y1, x2, y2 = lines[0][0]
     angle = math.degrees(math.atan2(y2 - y1, x2 - x1))
-    
+
     # Applying affine rotation transformation with the pre-calculated angle to get an upright image
     image_center = tuple(np.array(img.shape[1::-1]) / 2)
     rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
     result = cv2.warpAffine(
         img, rot_mat, img.shape[1::-1], flags=cv2.INTER_LINEAR)
-    
+
     return result
+
 
 # Retrieving the image with correct upright orientation
 orientedImage = retrieveImageWithOrientation()
@@ -137,8 +147,17 @@ for i in range(len(questions)):
     pass
 
 
-# Printing Findings
-print(gender)
-print(semester)
-print(program)
-print(questions)
+outputString = f'Image   : {fullImagePath}\nGender  : {gender}\nSemester: {semester}\nProgram : {program}\nAnswers :'
+for i in range(len(questions)):
+    outputString += f'\n\tSection {i+1}'
+    for j in range(len(questions[i])):
+        outputString += f'\n\t\tQ{j+1}. {questions[i][j]}'
+    outputString += "\n"
+
+
+print(outputString)
+f = open("Analysis Output.txt", "wt")
+f.write(outputString)
+f.close()
+
+input("Press Enter to exit.")
