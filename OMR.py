@@ -2,19 +2,16 @@ import numpy as np
 import cv2
 import math
 import sys
-import os
 
 # Taking the path of the answer sheet
 imagePath = input(
-    "Please input the RELATIVE path of the image you want to analyze without quotes\n")
-fullImagePath = os.getcwd().replace('\\', '/') + '/' + imagePath
-print(fullImagePath)
+    "Please input the ABSOLUTE path of the image you want to analyze without quotes\n")
 
 
 # Returns the read image with correct orientation in greyscale
 def retrieveImageWithOrientation():
 
-    img = cv2.imread(fullImagePath, 0)
+    img = cv2.imread(imagePath, 0)
     # 'D:/learning/cv/Optical-Mark-Recognition-OMR-/CSE365_test_cases_project_1/test_sample1.jpg'
 
     # Obtain edges
@@ -40,22 +37,74 @@ def retrieveImageWithOrientation():
 # Retrieving the image with correct upright orientation
 orientedImage = retrieveImageWithOrientation()
 
+
+# def nothing():
+#     pass
+# cv2.namedWindow("Trackbars")
+# cv2.createTrackbar("L-S", "Trackbars", 98, 255, nothing)
+# while True:
+#     _, thresh = cv2.threshold(orientedImage, cv2.getTrackbarPos("L-S", "Trackbars"), 255,
+#                             cv2.THRESH_BINARY_INV)
+#     cv2.namedWindow("thresh", cv2.WINDOW_NORMAL)
+#     cv2.imshow("thresh", thresh)
+#     thresh2 = cv2.morphologyEx(
+#     thresh, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 20)))
+#     cv2.namedWindow("thresh2", cv2.WINDOW_NORMAL)
+#     cv2.imshow("thresh2", thresh2)
+#     key = cv2.waitKey(1)
+#     if key == 27:
+#         break
+
 # Getting Binary image
-_, thresh = cv2.threshold(orientedImage, 0, 255,
-                          cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
+_, thresh = cv2.threshold(orientedImage, 140, 255,
+                          cv2.THRESH_BINARY_INV)
+cv2.namedWindow("thresh", cv2.WINDOW_NORMAL)
+cv2.imshow("thresh", thresh)
 
 # Opening Image to remove small pixels/noise
-thresh = cv2.morphologyEx(
+openedImg = cv2.morphologyEx(
     thresh, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 20)))
+# cv2.namedWindow("openedImg", cv2.WINDOW_NORMAL)
+# cv2.imshow("openedImg", openedImg)
+# cv2.waitKey(0)
 
 # Obtaining centroids through connected components
-_, _, _, centroids = cv2.connectedComponentsWithStats(thresh, connectivity=8)
+_, _, _, centroids = cv2.connectedComponentsWithStats(
+    openedImg, connectivity=8)
 
 # Removing background connected component
 centroids = centroids[1: len(centroids)]
 
 # Sorting components by y-coordinate
 centroids = centroids[np.argsort(centroids[:, 1])]
+
+##################################################################
+rightSide = 0
+leftSide = 0
+
+for i in range(3, len(centroids)):
+    if centroids[i][0] >= 1100 and centroids[i][0] <= 1560:
+        rightSide += 1
+    elif centroids[i][0] <= 1100:
+        leftSide += 1
+
+if leftSide > rightSide:
+    openedImg = cv2.flip(openedImg, 1)
+
+cv2.namedWindow("openedImg", cv2.WINDOW_NORMAL)
+cv2.imshow("openedImg", openedImg)
+cv2.waitKey(0)
+
+# Obtaining centroids through connected components
+_, _, _, centroids = cv2.connectedComponentsWithStats(
+    openedImg, connectivity=8)
+
+# Removing background connected component
+centroids = centroids[1: len(centroids)]
+
+# Sorting components by y-coordinate
+centroids = centroids[np.argsort(centroids[:, 1])]
+##################################################################
 
 # Next few lines create three arrays for centroids lying in their respective areas
 # We do this to ignore blobs outside our area of intereset,
@@ -147,7 +196,7 @@ for i in range(len(questions)):
     pass
 
 
-outputString = f'Image   : {fullImagePath}\nGender  : {gender}\nSemester: {semester}\nProgram : {program}\nAnswers :'
+outputString = f'Image   : {imagePath}\nGender  : {gender}\nSemester: {semester}\nProgram : {program}\nAnswers :'
 for i in range(len(questions)):
     outputString += f'\n\tSection {i+1}'
     for j in range(len(questions[i])):
@@ -156,8 +205,8 @@ for i in range(len(questions)):
 
 
 print(outputString)
-f = open("Analysis Output.txt", "wt")
+f = open("Output.txt", "wt")
 f.write(outputString)
 f.close()
 
-input("Press Enter to exit.")
+# input("Press Enter to exit.")
