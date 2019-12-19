@@ -29,7 +29,7 @@ def retrieveImageWithOrientation():
     image_center = tuple(np.array(img.shape[1::-1]) / 2)
     rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
     result = cv2.warpAffine(
-        img, rot_mat, img.shape[1::-1], flags=cv2.INTER_LINEAR)
+        img, rot_mat, img.shape[1::-1], flags=cv2.INTER_LINEAR, borderValue=255)
 
     return result
 
@@ -38,22 +38,25 @@ def retrieveImageWithOrientation():
 orientedImage = retrieveImageWithOrientation()
 
 
-# def nothing():
+# def nothing(a_a):
 #     pass
+
+
 # cv2.namedWindow("Trackbars")
 # cv2.createTrackbar("L-S", "Trackbars", 98, 255, nothing)
 # while True:
 #     _, thresh = cv2.threshold(orientedImage, cv2.getTrackbarPos("L-S", "Trackbars"), 255,
-#                             cv2.THRESH_BINARY_INV)
+#                               cv2.THRESH_BINARY_INV)
 #     cv2.namedWindow("thresh", cv2.WINDOW_NORMAL)
 #     cv2.imshow("thresh", thresh)
 #     thresh2 = cv2.morphologyEx(
-#     thresh, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 20)))
+#         thresh, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (25, 14)))
 #     cv2.namedWindow("thresh2", cv2.WINDOW_NORMAL)
 #     cv2.imshow("thresh2", thresh2)
 #     key = cv2.waitKey(1)
 #     if key == 27:
 #         break
+
 
 # Getting Binary image
 _, thresh = cv2.threshold(orientedImage, 140, 255,
@@ -61,36 +64,37 @@ _, thresh = cv2.threshold(orientedImage, 140, 255,
 cv2.namedWindow("thresh", cv2.WINDOW_NORMAL)
 cv2.imshow("thresh", thresh)
 
+############################### flipping image #########################################
+openedBlocksImage = cv2.morphologyEx(
+    thresh, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (25, 14)))
+
+cv2.namedWindow("openedBlocksImg", cv2.WINDOW_NORMAL)
+cv2.imshow("openedBlocksImg", openedBlocksImage)
+# Obtaining centroids through connected components
+_, _, _, centroidsBlocksImg = cv2.connectedComponentsWithStats(
+    openedBlocksImage, connectivity=8)
+print(centroidsBlocksImg)
+# Removing background connected component
+centroidsBlocksImg = centroidsBlocksImg[1: len(centroidsBlocksImg)]
+print(centroidsBlocksImg)
+
+# Sorting components by y-coordinate
+#centroidsBlocksImg = centroidsBlocksImg[np.argsort(centroidsBlocksImg[:, 0])]
+
+if centroidsBlocksImg[0][0] <= 520:
+    thresh = cv2.flip(thresh, 1)
+print(centroidsBlocksImg[0][0])
+print(centroidsBlocksImg[0][1])
+if centroidsBlocksImg[0][1] >= 2000:
+    thresh = cv2.flip(thresh, 0)
+
+cv2.namedWindow("threshFlipped", cv2.WINDOW_NORMAL)
+cv2.imshow("threshFlipped", thresh)
+########################################################################################
+
 # Opening Image to remove small pixels/noise
 openedImg = cv2.morphologyEx(
     thresh, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20, 20)))
-# cv2.namedWindow("openedImg", cv2.WINDOW_NORMAL)
-# cv2.imshow("openedImg", openedImg)
-# cv2.waitKey(0)
-
-# Obtaining centroids through connected components
-_, _, _, centroids = cv2.connectedComponentsWithStats(
-    openedImg, connectivity=8)
-
-# Removing background connected component
-centroids = centroids[1: len(centroids)]
-
-# Sorting components by y-coordinate
-centroids = centroids[np.argsort(centroids[:, 1])]
-
-##################################################################
-rightSide = 0
-leftSide = 0
-
-for i in range(3, len(centroids)):
-    if centroids[i][0] >= 1100 and centroids[i][0] <= 1560:
-        rightSide += 1
-    elif centroids[i][0] <= 1100:
-        leftSide += 1
-
-if leftSide > rightSide:
-    openedImg = cv2.flip(openedImg, 1)
-
 cv2.namedWindow("openedImg", cv2.WINDOW_NORMAL)
 cv2.imshow("openedImg", openedImg)
 cv2.waitKey(0)
@@ -104,6 +108,85 @@ centroids = centroids[1: len(centroids)]
 
 # Sorting components by y-coordinate
 centroids = centroids[np.argsort(centroids[:, 1])]
+
+############################Handling y-axis flip######################################
+# rightSide = 0
+# leftSide = 0
+
+# for i in range(3, len(centroids)):
+#     if centroids[i][0] >= 1100 and centroids[i][0] <= 1560:
+#         rightSide += 1
+#     elif centroids[i][0] <= 1100:
+#         leftSide += 1
+
+# if leftSide > rightSide:
+#     openedImg = cv2.flip(openedImg, 1)
+#     # Obtaining centroids through connected components
+#     _, _, _, centroids = cv2.connectedComponentsWithStats(
+#         openedImg, connectivity=8)
+
+#     # Removing background connected component
+#     centroids = centroids[1: len(centroids)]
+
+#     # Sorting components by y-coordinate
+#     centroids = centroids[np.argsort(centroids[:, 1])]
+
+# # cv2.namedWindow("openedImg", cv2.WINDOW_NORMAL)
+# # cv2.imshow("openedImg", openedImg)
+# # cv2.waitKey(0)
+
+
+# ##################################################################
+
+# ############################Handling x-axis flip######################################
+# upDiff = centroids[1][1]
+# downDiff = 2336 - centroids[len(centroids)-2][1]
+
+# if downDiff > upDiff:
+#     openedImg = cv2.flip(openedImg, 0)
+#     # Obtaining centroids through connected components
+#     _, _, _, centroids = cv2.connectedComponentsWithStats(
+#         openedImg, connectivity=8)
+
+#     # Removing background connected component
+#     centroids = centroids[1: len(centroids)]
+
+#     # Sorting components by y-coordinate
+#     centroids = centroids[np.argsort(centroids[:, 1])]
+
+# # cv2.namedWindow("openedImg", cv2.WINDOW_NORMAL)
+# # cv2.imshow("openedImg", openedImg)
+# # cv2.waitKey(0)
+#     centroids = centroids[np.argsort(centroids[:, 1])]
+
+# # cv2.namedWindow("openedImg", cv2.WINDOW_NORMAL)
+# # cv2.imshow("openedImg", openedImg)
+# # cv2.waitKey(0)
+
+
+# ##################################################################
+
+# ############################Handling x-axis flip######################################
+# upDiff = centroids[1][1]
+# downDiff = 2336 - centroids[len(centroids)-2][1]
+
+# if downDiff > upDiff:
+#     openedImg = cv2.flip(openedImg, 0)
+#     # Obtaining centroids through connected components
+#     _, _, _, centroids = cv2.connectedComponentsWithStats(
+#         openedImg, connectivity=8)
+
+#     # Removing background connected component
+#     centroids = centroids[1: len(centroids)]
+
+#     # Sorting components by y-coordinate
+#     centroids = centroids[np.argsort(centroids[:, 1])]
+
+# # cv2.namedWindow("openedImg", cv2.WINDOW_NORMAL)
+# # cv2.imshow("openedImg", openedImg)
+# # cv2.waitKey(0)
+
+
 ##################################################################
 
 # Next few lines create three arrays for centroids lying in their respective areas
