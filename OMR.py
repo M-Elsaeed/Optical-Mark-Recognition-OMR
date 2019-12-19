@@ -109,6 +109,8 @@ for i in range(len(centroids)):
 gender = None
 if(len(genderCentroids) == 1):
     gender = "Male" if (genderCentroids[0][0] - 1240) < 80 else "Female"
+elif (len(genderCentroids) > 1):
+    gender = "DUPLICATE"
 
 # Obtaining semester through location tests
 semester = None
@@ -120,6 +122,8 @@ if(len(semesterCentroids) == 1):
         semester = "Spring"
     elif semesterCentorid == 2:
         semester = "Summer"
+elif (len(semesterCentroids) > 1):
+    semester = "DUPLICATE"
 
 # Obtaining program through location tests
 program = None
@@ -149,7 +153,8 @@ if(len(programCentroids) == 1):
             program = "CISE"
         elif programNumber == 3:
             program = "HAUD"
-
+elif (len(programCentroids) > 1):
+    program = "DUPLICATE"
 
 # Data structure to hold ansewers to questions, initialized to None. Remains None if there is no answer
 
@@ -159,14 +164,35 @@ questions = [[None, None, None, None, None],
              [None, None, None],
              [None, None]]
 
-# Checking for answers in the answers section
+questionsPlaces = [[976, 1018, 1058, 1097, 1137],
+                   [1258, 1298, 1338, 1377, 1416, 1456],
+                   [1574, 1615, 1656],
+                   [1776, 1817, 1895],
+                   [2012, 2055]]
 
 c = 0
 for i in range(len(questions)):
     for j in range(len(questions[i])):
-        questions[i][j] = int((questionsCentroids[c][0] - 1110) / 100) + 1
-        c += 1
-    pass
+        # tamam
+        duplicateAvailable = 0
+        if c < len(questionsCentroids)-1:
+            for x in range(c+1, len(questionsCentroids)):
+                if questionsCentroids[c][1] - 10 < questionsCentroids[x][1] < questionsCentroids[c][1] + 10:
+                    duplicateAvailable += 1
+
+        if c < len(questionsCentroids):
+            if (questionsPlaces[i][j] - 10) < questionsCentroids[c][1] < (questionsPlaces[i][j]+10)\
+                    and (duplicateAvailable == 0):
+                questions[i][j] = int(
+                    (questionsCentroids[c][0] - 1110) / 100) + 1
+                c += 1
+            # if duplicates
+            elif duplicateAvailable > 0:
+                questions[i][j] = "DUPLICATE"
+                c += duplicateAvailable + 1
+            # if no answer
+            # else:
+            #     pass
 
 
 outputString = f'Image   : {imagePath}\nGender  : {gender}\nSemester: {semester}\nProgram : {program}\nAnswers :'
